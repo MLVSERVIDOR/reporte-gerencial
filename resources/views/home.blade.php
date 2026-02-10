@@ -11,7 +11,7 @@
     <meta content="Municipalidad Distrital de la Victoria" name="description" />
     <meta content="Themesbrand" name="author" />
     <!-- App favicon -->
-    <link rel="shortcut icon" href="assets/images/logo-sm.png">
+    <link rel="shortcut icon" href="assets/images/logo-sm1.png">
 
     <!-- jsvectormap css -->
     <link href="assets/libs/jsvectormap/css/jsvectormap.min.css" rel="stylesheet" type="text/css" />
