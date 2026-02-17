@@ -811,7 +811,7 @@ document.addEventListener('DOMContentLoaded', function () {
   */
 });
 </script>
-<script src="assets/js/reporteCategorias.js"></script>
+<script src="assets/js/reporteCategorias.js?v=2"></script>
 
     <!-- App js -->
     <script src="assets/js/app.js"></script>
