@@ -162,6 +162,8 @@ document.addEventListener('DOMContentLoaded', function () {
     '1.3.3 9.2 27','1.3.3 9.2 24','1.5.2 1.1 1','1.1.5 3.2 1'
   ];
  
+
+  
  // ✅ Normalizador: quita TODOS los espacios
   function normPartida(x) {
     return String(x || '').replace(/\s+/g, '').trim();
