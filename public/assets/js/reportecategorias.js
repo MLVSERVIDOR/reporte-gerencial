@@ -42,13 +42,14 @@ document.addEventListener('DOMContentLoaded', function () {
   // === Catálogo por CÓDIGO (ajusta a tus códigos reales) ===
   var PREDIAL_CODES   = ['1.1.21.11','1.1.21.12'];
   var ARBITRIOS_CODES = ['1.3.39.223','1.3.39.227','1.3.39.224'];
-  var MULTAS_CODES    = ['1.5.21.11'];
+  var MULTASNOTRIBUTARIAS_CODES    = ['1.5.21.11'];
+  var MULTAS_CODES    = ['1.1.53.21'];
 
   // === Construye data del pie desde rows ===
   function buildPieSeriesDataFromRows(rows){
     rows = Array.isArray(rows) ? rows : [];
 
-    var predial=0, arbitrios=0, multas=0;
+    var predial=0, arbitrios=0, multas=0, multasnotributarias=0;
 
     // 1) Intento por CÓDIGO (si existen cod_partida_norm o similares)
     for (var i=0;i<rows.length;i++){
@@ -66,6 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (PREDIAL_CODES.indexOf(code)   !== -1){ predial += monto; continue; }
       if (ARBITRIOS_CODES.indexOf(code) !== -1){ arbitrios += monto; continue; }
       if (MULTAS_CODES.indexOf(code)    !== -1){ multas   += monto; continue; }
+      if (MULTASNOTRIBUTARIAS_CODES.indexOf(code)    !== -1){ multasnotributarias   += monto; continue; }
     }
 
     // 2) Si TODO quedó en 0 (no había códigos o no matchearon), FALLBACK por texto
@@ -78,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (txt.indexOf('PREDIAL')   !== -1) { predial   += monto2; continue; }
         if (txt.indexOf('ARBITRIO')  !== -1) { arbitrios += monto2; continue; }
         if (txt.indexOf('MULTA')     !== -1) { multas    += monto2; continue; }
+        if (txt.indexOf('MULTA NO TRIBUTARIAS')     !== -1) { multasnotributarias    += monto2; continue; }
       }
     }
 
@@ -85,11 +88,13 @@ document.addEventListener('DOMContentLoaded', function () {
     predial   = Math.round((predial   + Number.EPSILON)*100)/100;
     arbitrios = Math.round((arbitrios + Number.EPSILON)*100)/100;
     multas    = Math.round((multas    + Number.EPSILON)*100)/100;
+    multasnotributarias    = Math.round((multasnotributarias    + Number.EPSILON)*100)/100;
 
     return [
       { name:'Predial',            value: predial },
       { name:'Arbitrios',          value: arbitrios },
-      { name:'Multas Tributarias', value: multas }
+      { name:'Multas Tributarias', value: multas },
+      { name:'Multas No Tributarias', value: multasnotributarias }
     ];
   }
 
@@ -105,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var data = buildPieSeriesDataFromRows(rows);
     // console.log('[DEBUG pie] data:', data, 'rows sample:', rows[0]);
 
-    var colors = (typeof getChartColorsArray === 'function' && getChartColorsArray(id)) || ['#5b8ff9','#61d9a3','#ff9c6e'];
+    var colors = (typeof getChartColorsArray === 'function' && getChartColorsArray(id)) || ['#5b8ff9','#61d9a3','#ff9c6e', '#dcd0ff'];
     var pieChart = echarts.init(el);
     pieChart.setOption({
       tooltip: {
@@ -152,15 +157,37 @@ document.addEventListener('DOMContentLoaded', function () {
     var el = document.getElementById(id);
     if (!el || !window.echarts) return;
 
-    var rows = Array.isArray(window.__rows) ? window.__rows : [];
+  var partidas = [
+    '1.1.2 1.1 1','1.1.2 1.1 2','1.3.3 9.2 23',
+    '1.3.3 9.2 27','1.3.3 9.2 24','1.5.2 1.1 1','1.1.5 3.2 1'
+  ];
+ 
+ // ✅ Normalizador: quita TODOS los espacios
+  function normPartida(x) {
+    return String(x || '').replace(/\s+/g, '').trim();
+  }
+  var partidasSet = new Set(partidas.map(normPartida));
+  var rows = Array.isArray(window.__rows) ? window.__rows : [];
+   // ✅ EXCLUIR esas partidas
+  rows = rows.filter(function (r) {
+    var p = normPartida(r && r.partida);
+    return !partidasSet.has(p);
+  });
+ console.log('rows filtradas:', rows);
+
+
     var tupa = rows.filter(function(r){ return String(r.tipo_tra ?? '') === '3'; })
                    .reduce(function(acc, r){ return acc + toNumber(r.monto); }, 0);
     var tusne = rows.filter(function(r){ return String(r.tipo_tra ?? '') === '4'; })
                     .reduce(function(acc, r){ return acc + toNumber(r.monto); }, 0);
     var cuis = rows.filter(function(r){ return String(r.tipo_tra ?? '') === '7'; })
                     .reduce(function(acc, r){ return acc + toNumber(r.monto); }, 0);
-    var otros = rows.filter(function(r){ return String(r.tipo_tra ?? '') === '0'; })
-                    .reduce(function(acc, r){ return acc + toNumber(r.monto); }, 0);
+    /*var otros = rows.filter(function(r){ return String(r.tipo_tra ?? '') === '0'; })
+                    .reduce(function(acc, r){ return acc + toNumber(r.monto); }, 0);*/
+    var otrosTipos = ['0','1','2'];
+    var otros = rows
+    .filter(function (r) { return otrosTipos.indexOf(String(r.tipo_tra ?? '')) !== -1; })
+    .reduce(function (acc, r) { return acc + toNumber(r.monto); }, 0);
 
     var data = [
       { value: Number((tupa ).toFixed(2))  || 0, name: "T.U.P.A." },
